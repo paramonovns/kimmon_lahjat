@@ -44,6 +44,7 @@ let rows: Reservation[] = [];
 let ready = false;
 let updating = false;
 let inFlight = false;
+let revision = 0;
 let toastTimer: ReturnType<typeof setTimeout>;
 const connection = document.querySelector<HTMLDivElement>("#connection")!;
 const connectionText = document.querySelector<HTMLSpanElement>("#connection-text")!;
@@ -97,11 +98,15 @@ function setConnection(ok: boolean, message: string) {
 async function sync() {
   if (!configured || inFlight || updating || document.hidden) return;
   inFlight = true;
+  const startedAtRevision = revision;
   try {
-    rows = await requestReservations();
+    const nextRows = await requestReservations();
+    if (revision !== startedAtRevision) return;
+    rows = nextRows;
     ready = true;
     setConnection(true, "Список обновляется для всех. Ваш резерв сохранится в этом браузере.");
   } catch (error) {
+    if (revision !== startedAtRevision) return;
     ready = false;
     setConnection(
       false,
@@ -117,10 +122,11 @@ async function sync() {
 
 document.querySelector(".gift-list")!.addEventListener("click", async (event) => {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".reserve-button");
-  if (!button || !ready || updating || inFlight) return;
+  if (!button || !ready || updating) return;
   const id = Number(button.dataset.id);
   const mine = rows.find((r) => r.gift_id === id)?.mine;
   updating = true;
+  revision += 1;
   render();
   button.textContent = mine ? "Снимаем резерв…" : "Заворачиваем…";
   try {

@@ -87,6 +87,34 @@ test("connection failure prevents reservations and recovers after reconnect", as
   await expect(page.locator(".reserve-button:enabled")).toHaveCount(9);
 });
 
+test("a delayed refresh cannot discard a click or overwrite a newer reservation", async ({
+  page,
+  context,
+}) => {
+  await mockServer(context, new Map());
+  await page.goto("/");
+  const button = page.locator('[data-gift-id="7"] .reserve-button');
+  await expect(button).toBeEnabled();
+  let markStarted!: () => void;
+  const started = new Promise<void>((resolve) => {
+    markStarted = resolve;
+  });
+  await context.route("https://kimmo-tests.supabase.co/rest/v1/rpc/kimmo_gifts", async (route) => {
+    if ((route.request().postDataJSON() as Request).p_action !== "list") return route.fallback();
+    markStarted();
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await route.fulfill({
+      json: Array.from({ length: 9 }, (_, i) => ({ gift_id: i + 7, busy: false, mine: false })),
+    });
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event("online")));
+  await started;
+  await button.click();
+  await expect(button).toHaveText(/Снять резерв/);
+  await page.waitForTimeout(1200);
+  await expect(button).toHaveText(/Снять резерв/);
+});
+
 for (const width of [1440, 768, 390, 320]) {
   test(`layout and photos at ${width}px; rows are exactly 250px`, async ({ page, context }) => {
     await mockServer(context, new Map());
