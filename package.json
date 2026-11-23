@@ -1,0 +1,20 @@
+{
+  "name": "kimmo-christmas-gifts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev --host 127.0.0.1",
+    "build": "tsc --noEmit && vp build",
+    "preview": "vp preview --host 127.0.0.1",
+    "check": "vp check",
+    "test": "playwright test",
+    "test:db": "node tests/database.test.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.17",
+    "@playwright/test": "1.58.2",
+    "typescript": "5.9.3",
+    "vite-plus": "1.7.0"
+  }
+}
