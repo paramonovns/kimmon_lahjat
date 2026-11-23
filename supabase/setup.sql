@@ -14,6 +14,8 @@ create table kimmo_private.reservations_2026 (
   created_at timestamptz not null default now()
 );
 alter table kimmo_private.reservations_2026 enable row level security;
+create policy deny_direct_client_access on kimmo_private.reservations_2026
+  for all to anon, authenticated using (false) with check (false);
 revoke all on table kimmo_private.reservations_2026 from public, anon, authenticated;
 
 -- SECURITY DEFINER is intentional: the table and owner hashes are private.
